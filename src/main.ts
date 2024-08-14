@@ -15,7 +15,7 @@ const app = express()
 app.use(cors({ credentials: true }))
 app.use(compression())
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: false }));
 // cookie middleware
 app.use(cookieParser())
 // api router 
@@ -25,14 +25,9 @@ app.use(errorResponse)
 // logger request
 app.use(logger)
 
-
-app.get("/", function (req, res) {
-    return res.json({
-        status: 200,
-        message: "Successfull"
-    })
-})
-
 app.listen(PORT, () => {
+
+    // winstonLogger.info
+
     console.log(`[server]: Server is running at http://localhost:${PORT}`);
 });
