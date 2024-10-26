@@ -1,112 +1,108 @@
-import { Request, type Response } from "express";
-import { eq } from "drizzle-orm";
+import { type MySqlColumn } from "drizzle-orm/mysql-core";
+import { DrizzleError, eq, } from "drizzle-orm";
+import bcrypt from "bcrypt"
+
 import { db } from "../model/db";
-import { users as usersTable } from "../model/schema";
+import { users as usersTable, credentials as credentialsTable } from "../model/schema";
+
 import { Validation } from "../validation/validation";
 import { AuthValidation } from "../validation/auth.validation";
 import { ResponseError } from "../utils/response-error";
-import { type InsertUser } from "../types";
-import { authentication, random, winstonLogger } from "../utils/helpers";
-import UserService from "./users.service";
+
+import type { InsertUser, InsertCredential } from "../@types";
+import { Request } from "express";
+import { DrizzleErrorResponse } from "../@types/drizzle";
+import { uuid } from "../utils/helpers";
+
 
 export default class AuthService {
 
-    static async login(request: Omit<InsertUser, 'username'>, response: Response) {
+    static async login(req: Request) {
 
+        const request = req.body as Omit<InsertUser, 'email'>
         const loginRequest = Validation.validate(AuthValidation.LOGIN, request)
 
-        const checkEmail = await AuthService.emailChecker(loginRequest.email)
-        if (!checkEmail || !checkEmail.length) {
-            throw new ResponseError(404, 'Email not found!')
+        const [currentUser] = await AuthService.selectUserIfExists(
+            usersTable.username, loginRequest.username
+        )
+
+        if (!currentUser) {
+            throw new ResponseError(404, 'User not found!')
         }
 
-        const user = checkEmail[0]
-        const expectHash = authentication(user.salt, loginRequest.password)
-        if (user.password !== expectHash) {
+        const passwordCheck = await bcrypt.compare(
+            loginRequest.password, currentUser.password
+        )
+
+        if (!passwordCheck) {
             throw new ResponseError(400, "Wrong password!")
         }
 
-        user.sessionToken = authentication(random(), user.password)
+        // Create Credential
+        const credentialPayload: InsertCredential = {
+            id: uuid(),
+            userId: currentUser.id
+        }
+        try {
+            await db
+                .insert(credentialsTable)
+                .values(credentialPayload)
 
-        await UserService.update(user.id, user)
+        } catch (error) {
 
-        const oneWeek = 7 * 24 * 3600 * 1000; //1 weeks
+            const duplicateError = "ER_DUP_ENTRY"
+            const drizzleError = error as DrizzleErrorResponse
 
-        response.cookie(process.env.SESSION_NAME, user.sessionToken, {
-            domain: process.env.DOMAIN,
-            path: "/",
-            expires: new Date(Date.now() + oneWeek),
-            httpOnly: true,
-            secure: true,
-        })
+            if (drizzleError.code === duplicateError) {
+                throw new ResponseError(403, "You has logged")
+            }
+        }
 
+        return { username: currentUser.username }
     }
 
     static async register(request: InsertUser) {
-
         const registerRequest = Validation.validate(AuthValidation.REGISTER, request)
 
-        const checkEmail = await AuthService.emailChecker(registerRequest.email)
-        const checkUsername = await AuthService.usernameChecker(registerRequest.username)
+        const [userByName] = await AuthService.selectUserIfExists(
+            usersTable.username, registerRequest.username
+        )
+        const [userByEmail] = await AuthService.selectUserIfExists(
+            usersTable.email, registerRequest.email
+        )
 
-        if (checkUsername.length) {
+        if (userByName) {
             throw new ResponseError(400, "Username already exists!")
         }
-        if (checkEmail.length) {
+        if (userByEmail) {
             throw new ResponseError(400, "Email already exists!")
         }
 
-        const salt = random()
+        const genSalt = await bcrypt.genSalt(10)
+        const hashPassword = await bcrypt.hash(registerRequest.password, genSalt)
 
-        const user = {
+        const payload: InsertUser = {
+            id: uuid(),
             username: registerRequest.username,
             email: registerRequest.email,
-            salt,
-            password: authentication(salt, registerRequest.password)
+            password: hashPassword
         }
 
-        const insertNewUser =
+        const [newUser] =
             await db
                 .insert(usersTable)
-                .values(user)
+                .values(payload)
                 .$returningId()
 
-        return { ...insertNewUser[0], ...registerRequest }
+        return { ...newUser, ...registerRequest }
     }
 
-    static async logout(request: Request, response: Response) {
 
-        const session_name = process.env.SESSION_NAME
-        const session = request.cookies[session_name]
-
-        const sessionChecker = await AuthService.sessionTokenChecker(session)
-        const users = sessionChecker
-
-        if (!users || !users.length) {
-            throw new ResponseError(404, "User not found")
-        }
-
-        const currentUSer = users[0]
-        currentUSer.sessionToken = null
-
-        await UserService.update(currentUSer.id, currentUSer)
-
-        response.clearCookie(session_name, {
-            domain: process.env.DOMAIN,
-            path: "/",
-        })
-
+    private static async selectUserIfExists(columTable: MySqlColumn, columnSelect: string) {
+        return await db.
+            select()
+            .from(usersTable)
+            .where(eq(columTable, columnSelect))
     }
 
-    private static async emailChecker(email: string) {
-        return await db.select().from(usersTable).where(eq(usersTable.email, email))
-    }
-
-    private static async usernameChecker(username: string) {
-        return await db.select().from(usersTable).where(eq(usersTable.username, username))
-    }
-
-    static async sessionTokenChecker(sessionToken: string) {
-        return await db.select().from(usersTable).where(eq(usersTable.sessionToken, sessionToken))
-    }
 }

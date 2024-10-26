@@ -1,0 +1,2 @@
+ALTER TABLE `credentials` MODIFY COLUMN `id` varchar(16) NOT NULL DEFAULT '2232899acbd2cb7d';--> statement-breakpoint
+ALTER TABLE `users` MODIFY COLUMN `id` varchar(16) NOT NULL DEFAULT 'effc3e8391b33c8f';

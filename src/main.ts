@@ -9,7 +9,7 @@ import { errorResponse } from "./middlewares/error.middleware";
 
 dotenv.config()
 
-const PORT = 3000
+const PORT = 8000
 
 const app = express()
 app.use(cors({ credentials: true }))

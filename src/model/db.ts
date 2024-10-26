@@ -9,7 +9,7 @@ export const poolConnection = mysql.createPool({
     user: process.env.USER,
     password: process.env.PASSWORD,
     database: process.env.NAME,
-    multipleStatements: true,
+    multipleStatements: true
 });
 
 export const db = drizzle(poolConnection);

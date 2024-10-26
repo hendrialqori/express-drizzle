@@ -7,13 +7,14 @@
     "dev": "nodemon ./src/main.ts",
     "build": "tsc",
     "start": "node ./dist/index.js",
-    "generate-db": "drizzle-kit generate",
-    "migration": "tsx src/model/migrate.ts"
+    "db:generate": "drizzle-kit generate",
+    "db:migration": "tsx src/model/migrate.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.33.0",
@@ -25,6 +26,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.17",

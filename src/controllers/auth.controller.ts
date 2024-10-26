@@ -1,6 +1,6 @@
 import { type Request, Response, NextFunction } from "express";
 import AuthService from "../services/auth.service";
-import { type InsertUser } from "../types";
+import { type InsertUser } from "../@types";
 
 
 export default class AuthController {
@@ -21,11 +21,10 @@ export default class AuthController {
 
     static async login(req: Request, res: Response, next: NextFunction) {
         try {
-            const request = req.body as Omit<InsertUser, 'username'>
-            await AuthService.login(request, res)
+            const data = await AuthService.login(req)
 
             return res.status(200)
-                .json({ message: "Login successfully!" })
+                .json({ message: `Hello ${data.username}, you're loggin now!` })
 
         } catch (error) {
             next(error)
@@ -34,7 +33,6 @@ export default class AuthController {
 
     static async logout(req: Request, res: Response, next: NextFunction) {
         try {
-            await AuthService.logout(req, res)
             return res.sendStatus(200)
 
         } catch (error) {

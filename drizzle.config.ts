@@ -5,7 +5,7 @@ dotenv.config()
 
 export default defineConfig({
     schema: [
-        "./src/schema.ts"
+        "./src/model/schema.ts"
     ],
     out: "./src/drizzle/migrations",
     dialect: "mysql",

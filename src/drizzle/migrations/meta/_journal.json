@@ -8,6 +8,34 @@
       "when": 1723518261993,
       "tag": "0000_open_terrax",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1729937545077,
+      "tag": "0001_watery_korath",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1729948073819,
+      "tag": "0002_odd_masque",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1729948170428,
+      "tag": "0003_tired_santa_claus",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1729949212159,
+      "tag": "0004_smooth_northstar",
+      "breakpoints": true
     }
   ]
 }
